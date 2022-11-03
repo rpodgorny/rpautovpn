@@ -42,13 +42,14 @@ fn has_public_ipv6_addr_functional(ifaces: &[&str]) -> bool {
 fn is_service_active(service_name: &str) -> bool {
     let rc = std::process::Command::new("systemctl")
         .args(["is-active", &service_name])
+        .stdout(std::process::Stdio::null())
         .status()
         .unwrap();
     rc.code() == Some(0)
 }
 
 fn start_stop_service(service_name: &str, action: &str) {
-    log::debug!("START_STOP {service_name} {action}");
+    log::info!("START_STOP {service_name} {action}");
     std::process::Command::new("systemctl")
         .args([action, &service_name])
         .status()
@@ -57,12 +58,15 @@ fn start_stop_service(service_name: &str, action: &str) {
 
 fn main() {
     simplelog::TermLogger::init(
-        simplelog::LevelFilter::Trace,
+        //simplelog::LevelFilter::Trace,
+        simplelog::LevelFilter::Info,
         simplelog::Config::default(),
         simplelog::TerminalMode::default(),
         simplelog::ColorChoice::Auto,
     )
     .unwrap();
+
+    log::info!("starting rpautovpn");
 
     let ifaces = vec!["eth0", "eno0", "wlan0"];
     let vpn_iface = "wg0";
@@ -77,6 +81,6 @@ fn main() {
         } else if !has_ipv6 && !is_vpn {
             start_stop_service(&service_name, "start");
         }
-        std::thread::sleep(std::time::Duration::from_secs(10));
+        std::thread::sleep(std::time::Duration::from_secs(10));  // TODO: hard-coded shit
     }
 }
