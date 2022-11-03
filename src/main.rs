@@ -66,7 +66,7 @@ fn main() {
     )
     .unwrap();
 
-    log::info!("starting rpautovpn");
+    log::info!("starting rpautovpn v{}", env!("CARGO_PKG_VERSION"));
 
     let ifaces = vec!["eth0", "eno0", "wlan0"];
     let vpn_iface = "wg0";
