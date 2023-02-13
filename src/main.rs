@@ -2,10 +2,10 @@ fn is_public(addr: &std::net::Ipv6Addr) -> bool {
     addr.to_string().starts_with('2')
 }
 
-fn has_public_ipv6_addr_imperative(ifaces: &[&str]) -> bool {
+fn has_public_ipv6_addr_imperative(prefixes: &[&str]) -> bool {
     for i in pnet::datalink::interfaces() {
         log::trace!("IFACE {:?} {:?}", i.name, i.ips);
-        if !ifaces.contains(&i.name.as_str()) {
+        if !prefixes.iter().any(|x| i.name.starts_with(x)) {
             continue;
         }
         for ip in i.ips {
@@ -21,10 +21,10 @@ fn has_public_ipv6_addr_imperative(ifaces: &[&str]) -> bool {
     false
 }
 
-fn has_public_ipv6_addr_functional(ifaces: &[&str]) -> bool {
+fn has_public_ipv6_addr_functional(prefixes: &[&str]) -> bool {
     pnet::datalink::interfaces()
         .iter()
-        .filter(|x| ifaces.contains(&x.name.as_str()))
+        .filter(|i| prefixes.iter().any(|x| i.name.starts_with(x)))
         .flat_map(|x| {
             x.ips
                 .iter()
@@ -67,12 +67,12 @@ fn main() {
 
     log::info!("starting rpautovpn v{}", env!("CARGO_PKG_VERSION"));
 
-    let ifaces = vec!["eth0", "eno0", "wlan0"];
+    let prefixes = vec!["eth", "eno", "wlan"];
     let vpn_iface = "wg0";
     let service_name = format!("wg-quick@{vpn_iface}.service");
 
     loop {
-        let has_ipv6 = has_public_ipv6_addr_functional(&ifaces);
+        let has_ipv6 = has_public_ipv6_addr_functional(&prefixes);
         let is_vpn = is_service_active(&service_name);
         log::debug!("STATE ipv6: {:?} vpn: {:?}", has_ipv6, is_vpn);
         if has_ipv6 && is_vpn {
