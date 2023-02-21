@@ -57,6 +57,15 @@ fn start_stop_service(service_name: &str, action: &str) {
         .unwrap();
 }
 
+fn ping6() -> bool {
+    std::process::Command::new("ping")
+        .args(["-6", "-c", "4", "2001:4860:4860::8844"]) // google public dns server
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map_or(false, |x| x.success())
+}
+
 fn main() {
     simplelog::TermLogger::init(
         //simplelog::LevelFilter::Trace,
@@ -81,6 +90,8 @@ fn main() {
             start_stop_service(&service_name, "stop");
         } else if !has_ipv6 && !is_vpn {
             start_stop_service(&service_name, "start");
+        } else if is_vpn && !ping6() {
+            start_stop_service(&service_name, "restart");
         }
         std::thread::sleep(std::time::Duration::from_secs(10));  // TODO: hard-coded shit
     }
