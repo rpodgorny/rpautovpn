@@ -2,7 +2,8 @@ fn is_public(addr: &std::net::Ipv6Addr) -> bool {
     addr.to_string().starts_with('2')
 }
 
-fn has_public_ipv6_addr_imperative(prefixes: &[&str]) -> bool {
+// the imperative way
+fn has_public_ipv6_addr_(prefixes: &[&str]) -> bool {
     for i in pnet::datalink::interfaces() {
         log::trace!("IFACE {:?} {:?}", i.name, i.ips);
         if !prefixes.iter().any(|x| i.name.starts_with(x)) {
@@ -21,7 +22,8 @@ fn has_public_ipv6_addr_imperative(prefixes: &[&str]) -> bool {
     false
 }
 
-fn has_public_ipv6_addr_functional(prefixes: &[&str]) -> bool {
+// the functional way
+fn has_public_ipv6_addr(prefixes: &[&str]) -> bool {
     pnet::datalink::interfaces()
         .iter()
         .filter(|i| prefixes.iter().any(|x| i.name.starts_with(x)))
@@ -72,7 +74,7 @@ fn main() {
     let service_name = format!("wg-quick@{vpn_iface}.service");
 
     loop {
-        let has_ipv6 = has_public_ipv6_addr_functional(&prefixes);
+        let has_ipv6 = has_public_ipv6_addr(&prefixes);
         let is_vpn = is_service_active(&service_name);
         log::debug!("STATE ipv6: {:?} vpn: {:?}", has_ipv6, is_vpn);
         if has_ipv6 && is_vpn {
