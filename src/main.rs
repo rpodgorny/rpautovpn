@@ -1,3 +1,5 @@
+const SLEEP: u64 = 10;
+
 fn is_public(addr: &std::net::Ipv6Addr) -> bool {
     addr.to_string().starts_with('2')
 }
@@ -40,6 +42,23 @@ fn has_public_ipv6_addr(prefixes: &[&str]) -> bool {
         > 0
 }
 
+// the functional way
+fn has_ipv4_addr(prefixes: &[&str]) -> bool {
+    pnet::datalink::interfaces()
+        .iter()
+        .filter(|i| prefixes.iter().any(|x| i.name.starts_with(x)))
+        .flat_map(|x| {
+            x.ips
+                .iter()
+                .filter_map(|x| match x {
+                    pnet::ipnetwork::IpNetwork::V6(_) => None,
+                    pnet::ipnetwork::IpNetwork::V4(v) => Some(v),
+                })
+        })
+        .count()
+        > 0
+}
+
 fn is_service_active(service_name: &str) -> bool {
     let rc = std::process::Command::new("systemctl")
         .args(["is-active", service_name])
@@ -66,6 +85,15 @@ fn ping6() -> bool {
         .map_or(false, |x| x.success())
 }
 
+fn ping4() -> bool {
+    std::process::Command::new("ping")
+        .args(["-4", "-c", "4", "8.8.8.8"]) // google public dns server
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map_or(false, |x| x.success())
+}
+
 fn main() {
     simplelog::TermLogger::init(
         //simplelog::LevelFilter::Trace,
@@ -83,16 +111,19 @@ fn main() {
     let service_name = format!("wg-quick@{vpn_iface}.service");
 
     loop {
+        let has_ipv4 = has_ipv4_addr(&prefixes);
         let has_ipv6 = has_public_ipv6_addr(&prefixes);
         let is_vpn = is_service_active(&service_name);
         log::debug!("STATE ipv6: {:?} vpn: {:?}", has_ipv6, is_vpn);
-        if has_ipv6 && is_vpn {
+        if is_vpn && (has_ipv6 || !has_ipv4) {
             start_stop_service(&service_name, "stop");
-        } else if !has_ipv6 && !is_vpn {
-            start_stop_service(&service_name, "start");
-        } else if is_vpn && !ping6() {
-            start_stop_service(&service_name, "restart");
+        } else if has_ipv4 {
+            if !has_ipv6 && !is_vpn {
+                start_stop_service(&service_name, "start");
+            } else if is_vpn && !ping6() {
+                start_stop_service(&service_name, "restart");
+            }
         }
-        std::thread::sleep(std::time::Duration::from_secs(10));  // TODO: hard-coded shit
+        std::thread::sleep(std::time::Duration::from_secs(SLEEP));
     }
 }
