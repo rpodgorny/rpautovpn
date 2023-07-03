@@ -1,7 +1,7 @@
 const SLEEP: u64 = 10;
 
 fn is_public(addr: &std::net::Ipv6Addr) -> bool {
-    addr.to_string().starts_with('2')
+    addr.to_string().starts_with('2')  // TODO: this is oversimplification but seems to be working just fine for now
 }
 
 // the imperative way
