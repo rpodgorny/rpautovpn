@@ -78,7 +78,7 @@ fn start_stop_service(service_name: &str, action: &str) {
 
 fn ping6() -> bool {
     std::process::Command::new("ping")
-        .args(["-6", "-c", "4", "2001:4860:4860::8844"]) // google public dns server
+        .args(["-n", "-6", "-c", "4", "2001:4860:4860::8844"]) // google public dns server
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
@@ -87,7 +87,7 @@ fn ping6() -> bool {
 
 fn ping4() -> bool {
     std::process::Command::new("ping")
-        .args(["-4", "-c", "4", "8.8.8.8"]) // google public dns server
+        .args(["-n", "-4", "-c", "4", "8.8.4.4"]) // google public dns server
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()
@@ -120,7 +120,7 @@ fn main() {
         } else if has_ipv4 {
             if !has_ipv6 && !is_vpn {
                 start_stop_service(&service_name, "start");
-            } else if is_vpn && !ping6() {
+            } else if is_vpn && !ping6() && ping4() {
                 start_stop_service(&service_name, "restart");
             }
         }
