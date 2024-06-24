@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 log = "0.4.21"
-pnet = "0.34.0"
+pnet = "0.35.0"
 simplelog = "0.12.2"
